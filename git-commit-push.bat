@@ -4,9 +4,9 @@
 :: Stage, commit, and push this repository.
 :: Double-click to run.
 ::
-:: Repo: https://github.com/phildeluca-gmail/interface-changes-rimworld
+:: Repo: https://github.com/phildeluca-gmail/interface-improvements-rimworld
 ::
-:: Based on git-commit-generic.bat from the Do Not Interface Changes repo, with
+:: Based on git-commit-generic.bat from the Do Not Interface Improvements repo, with
 :: one addition: it pulls (rebase) before pushing, so a change made on
 :: another machine or on GitHub does not turn into a rejected push.
 ::

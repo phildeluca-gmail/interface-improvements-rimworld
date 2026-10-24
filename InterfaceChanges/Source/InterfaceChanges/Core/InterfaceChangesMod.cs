@@ -32,7 +32,7 @@ namespace InterfaceChanges.Core
         // drawn from this string, not from About.xml.
         public override string SettingsCategory()
         {
-            return "Ketjak's Interface Changes";
+            return "Ketjak's Interface Improvements";
         }
     }
 }

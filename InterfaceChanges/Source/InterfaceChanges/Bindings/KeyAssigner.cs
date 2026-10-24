@@ -75,7 +75,7 @@ namespace InterfaceChanges.Bindings
             int tabsTotal = 0, tabsBound = 0, catsTotal = 0, catsBound = 0, optsTotal = 0, optsBound = 0;
 
             // 1. Main tabs - unique among themselves, and off every key live with them.
-            KeyBindingCategoryDef tabCat = MakeCategory("IC_MainTabs", "Interface Changes - main tabs",
+            KeyBindingCategoryDef tabCat = MakeCategory("IC_MainTabs", "Interface Improvements - main tabs",
                 "Development", "Game", "GameMapCamera", "SelectionMisc", "MainTabs");
             var tabTaken = new HashSet<KeyCode>(liveInTabs);
             var tabs = new List<MainButtonDef>(DefDatabase<MainButtonDef>.AllDefsListForReading);
@@ -98,7 +98,7 @@ namespace InterfaceChanges.Bindings
 
             // 2. Architect categories - live only while the architect tab is
             // open, where the main tab keys are live too.
-            KeyBindingCategoryDef catCat = MakeCategory("IC_ArchitectCategories", "Interface Changes - architect categories",
+            KeyBindingCategoryDef catCat = MakeCategory("IC_ArchitectCategories", "Interface Improvements - architect categories",
                 "Development", "Game", "GameMapCamera", "Architect", "MainTabs", "IC_MainTabs");
             var catTaken = new HashSet<KeyCode>(liveInArchitect);
             foreach (KeyBindingDef g in generated)
@@ -131,7 +131,7 @@ namespace InterfaceChanges.Bindings
             foreach (DesignationCategoryDef cat in categories)
             {
                 KeyBindingCategoryDef optCat = MakeCategory("IC_Arch_" + cat.defName,
-                    "Interface Changes - architect: " + cat.LabelCap,
+                    "Interface Improvements - architect: " + cat.LabelCap,
                     "Development", "Game", "GameMapCamera", "Architect", "MainTabs", "IC_MainTabs", "IC_ArchitectCategories");
                 var taken = new HashSet<KeyCode>(archBase);
                 List<Designator> designators = cat.AllResolvedDesignators;
