@@ -44,8 +44,10 @@ namespace InterfaceChanges.Drop
                     return;
                 }
 
+                string stackLabel = thing.stackCount > 1 ? thing.LabelShortCap + " x" + thing.stackCount : thing.LabelShortCap;
                 pawn.inventory.innerContainer.TryDrop(thing, pawn.Position, pawn.Map, ThingPlaceMode.Near, out Thing _);
-                Logger.Info(pawn.LabelShort + " dropped " + thing.LabelCap + " from inventory (drop everything)");
+                // Recorded in the order's end state line, not logged per stack (2026-10-25).
+                DropEverything.NoteDropped(pawn, stackLabel);
                 EndJobWith(JobCondition.Succeeded);
             };
             yield return toil;

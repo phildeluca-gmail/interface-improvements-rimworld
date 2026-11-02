@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using InterfaceChanges.Bills;
+using UnityEngine;
 using RimWorld;
 using Verse;
 
@@ -17,6 +19,10 @@ namespace InterfaceChanges.Core
         // Ordered 2026-10-10: the enlarged group may wrap across up to this many rows.
         public int mapGroupMaxRows = 5;
 
+        // Standard bill sets, ii-architecture.md section 13. Global, so they
+        // outlive any save, like Standard Cargo's templates.
+        public List<BillSet> billSets = new List<BillSet>();
+
         public override void ExposeData()
         {
             base.ExposeData();
@@ -24,6 +30,8 @@ namespace InterfaceChanges.Core
             Scribe_Values.Look(ref enlargeCurrentMapGroup, "enlargeCurrentMapGroup", true);
             Scribe_Values.Look(ref mapGroupSizePercent, "mapGroupSizePercent", 150f);
             Scribe_Values.Look(ref mapGroupMaxRows, "mapGroupMaxRows", 5);
+            Scribe_Collections.Look(ref billSets, "billSets", LookMode.Deep);
+            if (billSets == null) billSets = new List<BillSet>();
         }
 
         public void DoWindowContents(Rect inRect)

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Title column for the Assign tab (ii-architecture.md section 12). -->
+  <PawnColumnDef>
+    <defName>IC_Title</defName>
+    <label>title</label>
+    <workerClass>InterfaceChanges.Columns.PawnColumnWorker_Title</workerClass>
+    <headerTip>The pawn's title, as shown in the Rename dialog.</headerTip>
+    <width>130</width>
+    <sortable>true</sortable>
+  </PawnColumnDef>
+</Defs>

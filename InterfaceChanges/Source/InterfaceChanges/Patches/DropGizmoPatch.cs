@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using HarmonyLib;
 using InterfaceChanges.Drop;
+using InterfaceChanges.Utility;
 using RimWorld;
 using Verse;
 
@@ -23,7 +24,7 @@ namespace InterfaceChanges.Patches
                 yield return gizmo;
             }
 
-            if (__instance != null && __instance.IsColonist && __instance.Spawned && !__instance.Dead)
+            if (!DropButtonCompat.SuppressDropButton && __instance != null && __instance.IsColonist && __instance.Spawned && !__instance.Dead)
             {
                 yield return new Command_Action
                 {

@@ -27,5 +27,12 @@ namespace InterfaceChanges.Utility
             Messages.Message(text, target, MessageTypeDefOf.RejectInput, false);
             Log.Message(Prefix + text);
         }
+
+        // Neutral on-screen message that looks at a thing, and the log line.
+        public static void Report(string text, Verse.Thing target)
+        {
+            Messages.Message(text, new LookTargets(target), MessageTypeDefOf.NeutralEvent, false);
+            Log.Message(Prefix + text);
+        }
     }
 }

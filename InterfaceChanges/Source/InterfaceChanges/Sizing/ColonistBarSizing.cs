@@ -352,7 +352,8 @@ namespace InterfaceChanges.Sizing
             groupWeaponTight = newTight;
             scale = sOther;
             active = true;
-            LogOnce("big|" + map.uniqueID + "|" + wrapTight + "|" + bigRows + "|" + maxRows + "|" + percent.ToString("F0") + "|" + sBig.ToString("F2") + "|" + sOther.ToString("F2"),
+            // Key is row count, wrapTight and the reduced-to reason only; scales are in the text (2026-10-25).
+            LogOnce("big|" + map.uniqueID + "|" + percent.ToString("F0") + "|" + wrapTight + "|" + bigRows + "|" + (bigReduced ? (bigHeightReason ? "height" : "width") : "none"),
                 "Colonist bar: " + mapLabel + " group enlarged to " + percent.ToString("F0") + "% (scale " + sBig.ToString("F2")
                 + (bigReduced ? (bigHeightReason ? ", reduced to fit height" : ", reduced to fit width") : "") + ", " + bigRows + " row(s) of at most " + maxRows + "), other groups scale " + sOther.ToString("F2")
                 + ", vanilla scale " + s0.ToString("F2") + (wrapTight ? ", rows spaced for weapon icons." : "."));

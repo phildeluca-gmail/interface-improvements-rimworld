@@ -34,6 +34,9 @@ namespace InterfaceChanges.Drop
             public int startTick;
             // Worn apparel and the equipped weapon this order queued, so the end line can say which came off.
             public List<Thing> queuedGear = new List<Thing>();
+            // Inventory stacks the drop jobs actually dropped, reported by
+            // JobDriver_DropInventoryStack; written once in the end state.
+            public List<string> droppedStacks = new List<string>();
         }
 
         private static readonly Dictionary<Pawn, PendingOrder> pending = new Dictionary<Pawn, PendingOrder>();
@@ -62,6 +65,13 @@ namespace InterfaceChanges.Drop
             int apparelQueued = 0, apparelLocked = 0, apparelWarcasket = 0;
             int weaponQueued = 0, weaponKept = 0;
             int inventoryQueued = 0;
+            // Item names by outcome, 2026-10-25: listed in the one "pressed" line instead of one line per item.
+            var namesLocked = new List<string>();
+            var namesWarcasket = new List<string>();
+            var namesApparelQueued = new List<string>();
+            var namesRefused = new List<string>();
+            var namesInventory = new List<string>();
+            string weaponNote = "";
 
             if (pawn.apparel != null)
             {
@@ -71,6 +81,7 @@ namespace InterfaceChanges.Drop
                     if (pawn.apparel.IsLocked(apparel))
                     {
                         apparelLocked++;
+                        namesLocked.Add(apparel.LabelCap);
                         NameAndSkip(pawn, apparel, "locked");
                         continue;
                     }
@@ -78,6 +89,7 @@ namespace InterfaceChanges.Drop
                     if (WarcasketCompat.IsWarcasket(apparel))
                     {
                         apparelWarcasket++;
+                        namesWarcasket.Add(apparel.LabelCap);
                         NameAndSkip(pawn, apparel, "a warcasket");
                         continue;
                     }
@@ -92,11 +104,11 @@ namespace InterfaceChanges.Drop
                         apparelQueued++;
                         order.queuedGear.Add(apparel);
                         LogStarted(ref startedLogged, orderId, pawn, job);
-                        Logger.Info(pawn.LabelShort + ": drop everything - " + label + " queued to be taken off");
+                        namesApparelQueued.Add(label);
                     }
                     else
                     {
-                        Logger.Info(pawn.LabelShort + ": drop everything - " + label + " NOT queued, the game refused the remove-apparel order");
+                        namesRefused.Add(label + " (remove-apparel refused)");
                     }
                 }
             }
@@ -108,7 +120,7 @@ namespace InterfaceChanges.Drop
                 if (keepWeapon)
                 {
                     weaponKept++;
-                    Logger.Info(pawn.LabelShort + ": drop everything - " + label + " kept (equipped weapon)");
+                    weaponNote = label + " kept (equipped weapon)";
                 }
                 else
                 {
@@ -121,11 +133,11 @@ namespace InterfaceChanges.Drop
                         weaponQueued++;
                         order.queuedGear.Add(weapon);
                         LogStarted(ref startedLogged, orderId, pawn, job);
-                        Logger.Info(pawn.LabelShort + ": drop everything - " + label + " queued to be dropped");
+                        weaponNote = label + " queued to be dropped";
                     }
                     else
                     {
-                        Logger.Info(pawn.LabelShort + ": drop everything - " + label + " NOT queued, the game refused the drop-equipment order");
+                        weaponNote = label + " NOT queued (drop-equipment refused)";
                     }
                 }
             }
@@ -143,6 +155,7 @@ namespace InterfaceChanges.Drop
                         order.jobs.Add(job);
                         order.defs[job] = job.def;
                         inventoryQueued++;
+                        namesInventory.Add(thing.stackCount > 1 ? thing.LabelShortCap + " x" + thing.stackCount : thing.LabelShortCap);
                         LogStarted(ref startedLogged, orderId, pawn, job);
                     }
                 }
@@ -150,9 +163,16 @@ namespace InterfaceChanges.Drop
 
             int totalQueued = apparelQueued + weaponQueued + inventoryQueued;
             string outcome = totalQueued == 0
-                ? "nothing to drop"
-                : "apparel " + apparelQueued + " queued (" + apparelLocked + " locked, " + apparelWarcasket + " warcasket skipped), "
-                    + "weapon " + weaponQueued + " queued, " + weaponKept + " kept, inventory " + inventoryQueued + " queued";
+                ? "nothing to drop - left: locked " + NameList(namesLocked) + " | warcasket " + NameList(namesWarcasket)
+                    + " | refused " + NameList(namesRefused) + " | weapon: " + (weaponNote.Length == 0 ? "none" : weaponNote)
+                :"apparel " + apparelQueued + " queued (" + apparelLocked + " locked, " + apparelWarcasket + " warcasket skipped), "
+                    + "weapon " + weaponQueued + " queued, " + weaponKept + " kept, inventory " + inventoryQueued + " queued"
+                    + " | apparel queued: " + NameList(namesApparelQueued)
+                    + " | locked: " + NameList(namesLocked)
+                    + " | warcasket skipped: " + NameList(namesWarcasket)
+                    + " | refused: " + NameList(namesRefused)
+                    + " | weapon: " + (weaponNote.Length == 0 ? "none" : weaponNote)
+                    + " | inventory queued: " + NameList(namesInventory);
             Logger.Info(pawn.LabelShort + ": drop everything pressed - " + outcome);
 
             if (totalQueued == 0)
@@ -162,6 +182,22 @@ namespace InterfaceChanges.Drop
             else
             {
                 pending[pawn] = order;
+            }
+        }
+
+        private static string NameList(List<string> names)
+        {
+            return names.Count == 0 ? "none" : string.Join(", ", names.ToArray());
+        }
+
+        // Called by JobDriver_DropInventoryStack after a stack is dropped. The
+        // per-stack log line was replaced (2026-10-25) by this record, written
+        // in the order's end state, which PollOrders always reaches.
+        public static void NoteDropped(Pawn pawn, string stackLabel)
+        {
+            if (pawn != null && pending.TryGetValue(pawn, out PendingOrder order))
+            {
+                order.droppedStacks.Add(stackLabel);
             }
         }
 
@@ -286,6 +322,7 @@ namespace InterfaceChanges.Drop
                 + " | queued but still on (" + stillOn.Count + "): " + (stillOn.Count == 0 ? "none" : string.Join(", ", stillOn.ToArray()))
                 + " | now wearing (" + worn.Count + "): " + (worn.Count == 0 ? "none" : string.Join(", ", worn.ToArray()))
                 + " | weapon: " + (weapon == null ? "none" : weapon.LabelShortCap)
+                + " | inventory dropped (" + order.droppedStacks.Count + "): " + NameList(order.droppedStacks)
                 + " | inventory (" + inv.Count + "): " + (inv.Count == 0 ? "empty" : string.Join(", ", inv.ToArray()));
         }
 
@@ -319,7 +356,8 @@ namespace InterfaceChanges.Drop
 
         private static void NameAndSkip(Pawn pawn, Apparel apparel, string reason)
         {
-            Logger.Tell(pawn.LabelShort + ": leaving " + apparel.LabelCap + " - " + reason + ".", pawn);
+            // On-screen only; the item is named in the "drop everything pressed" log line (2026-10-25).
+            Messages.Message(pawn.LabelShort + ": leaving " + apparel.LabelCap + " - " + reason + ".", pawn, MessageTypeDefOf.RejectInput, false);
         }
     }
 }

@@ -32,6 +32,7 @@ namespace InterfaceChanges.Bindings
         public override void FinalizeInit()
         {
             DropEverything.EndAllForLoad();
+            InterfaceChanges.Bills.BillTools.ClearClipboard();
         }
 
         public override void GameComponentTick()

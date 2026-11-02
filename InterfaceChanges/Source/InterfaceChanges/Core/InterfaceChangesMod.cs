@@ -20,7 +20,15 @@ namespace InterfaceChanges.Core
             SelectionNamesPatch.Apply(harmony);
             TabLabelPatch.Apply(harmony);
             ColonistBarPatches.Apply(harmony);
+            Utility.DropButtonCompat.Evaluate();
             Logger.Info("Loaded.");
+        }
+
+        // Writes ModSettings to disk now; called when a standard bill set
+        // is saved, renamed or deleted so it survives a crash.
+        public static void SaveSettings()
+        {
+            LoadedModManager.GetMod<InterfaceChangesMod>().WriteSettings();
         }
 
         public override void DoSettingsWindowContents(Rect inRect)
