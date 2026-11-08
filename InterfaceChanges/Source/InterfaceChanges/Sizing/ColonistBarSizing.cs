@@ -10,7 +10,7 @@ using Logger = InterfaceChanges.Utility.Logger;
 namespace InterfaceChanges.Sizing
 {
     // State and layout for the larger colonist bar group. See
-    // ic-architecture.md section 9. Holds one scale per group, the "group
+    // docs\ii\ii-architecture.md section 9. Holds one scale per group, the "group
     // being drawn now" context the patched ColonistBar.Scale reads, and the
     // layout that replaces vanilla's single global scale when the setting is
     // on. When it cannot do better than vanilla it declines and vanilla runs.
@@ -26,6 +26,7 @@ namespace InterfaceChanges.Sizing
         // Ordered 2026-10-18: tighter rows (per scale unit) and a grey frame ending this far below the lowest weapon icon.
         private const float RowTighten = 4f;
         private const float FramePad = 4f;
+        // Floor for the other groups, except when vanilla's own scale is already lower, in which case the floor is vanilla's scale.
         private const float MinOtherScale = 0.35f;
         // Ordered 2026-10-11: the bar, outer frames included, stays this far from both screen edges.
         private const float SideMargin = 200f;
@@ -294,7 +295,7 @@ namespace InterfaceChanges.Sizing
             }
             if (!found)
             {
-                return DeclineToVanilla("no room for a larger group", mapLabel);
+                return DeclineToVanilla("no room for a larger group; " + groupsCount + " groups, screen width " + UI.screenWidth, mapLabel);
             }
 
             // The enlarged group wraps over as many rows as the fit chose.
@@ -376,7 +377,7 @@ namespace InterfaceChanges.Sizing
             int groupsCount = counts.Length;
             slots = new int[groupsCount];
             sOther = s0;
-            while (sOther >= MinOtherScale - 0.0001f)
+            while (sOther >= Mathf.Min(MinOtherScale, s0) - 0.0001f)
             {
                 float width = slotsBig * PitchX * sBig;
                 for (int g = 1; g < groupsCount; g++)
@@ -390,6 +391,9 @@ namespace InterfaceChanges.Sizing
                 int maxPerRow = Mathf.FloorToInt(remaining / (PitchX * sOther));
                 if (maxPerRow >= 1 && DistributeOthers(counts, bigGroup, maxPerRow, slots))
                 {
+                    // Vanilla's GetAllowedRowsCountForScale (ilspycmd, 2026-11-08): >0.58 one row, >0.42 two,
+                    // otherwise three, with no further steps. Kept as is. A failure here moves on to more
+                    // rows or a smaller big group.
                     int allowedRows = sOther > 0.58f ? 1 : (sOther > 0.42f ? 2 : 3);
                     bool fits = true;
                     for (int g = 0; g < groupsCount && fits; g++)

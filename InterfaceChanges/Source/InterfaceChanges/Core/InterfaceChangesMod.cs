@@ -19,6 +19,7 @@ namespace InterfaceChanges.Core
             harmony.PatchAll();
             SelectionNamesPatch.Apply(harmony);
             TabLabelPatch.Apply(harmony);
+            NeedsSocialPatch.Apply(harmony);
             ColonistBarPatches.Apply(harmony);
             TradeDividerPatches.Apply(harmony);
             InterfaceChanges.MessageKinds.MessageFilter.Apply(harmony);
