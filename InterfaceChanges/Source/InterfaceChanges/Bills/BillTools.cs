@@ -31,6 +31,11 @@ namespace InterfaceChanges.Bills
             get { return clipboard.Count; }
         }
 
+        public static string ClipboardSource
+        {
+            get { return clipboardSource ?? ""; }
+        }
+
         // Null when the building can still take bills; otherwise why not.
         public static string InvalidReason(Thing thing)
         {
@@ -91,7 +96,7 @@ namespace InterfaceChanges.Bills
             {
                 recipeName = b.recipe.defName,
                 recipe = b.recipe,
-                make = () => b.Clone()
+                make = () => { Bill c = b.Clone(); c.InitializeAfterClone(); return c; }
             }).ToList();
             Apply(thing, "clipboard from " + clipboardSource, list, replace, false);
         }
@@ -199,7 +204,7 @@ namespace InterfaceChanges.Bills
             }
             // Check every candidate before touching the stack, so a replace
             // never deletes bills when nothing valid would take their place.
-            int notHere = 0, unavailable = 0, notResearched = 0, failed = 0, limit = 0;
+            int notHere = 0, unavailable = 0, notResearched = 0, failed = 0, limit = 0, cleared = 0, invalidFailed = 0;
             var valid = new List<KeyValuePair<Candidate, Bill>>();
             foreach (Candidate c in list)
             {
@@ -238,6 +243,18 @@ namespace InterfaceChanges.Bills
             {
                 if (stack.Count >= BillStack.MaxCount) { limit++; continue; }
                 stack.AddBill(kv.Value);
+                // Our clipboard is not in BillUtility.GlobalBills, so nothing has
+                // validated it: this clears a dead pawn or a deleted stockpile.
+                // Needs billStack, which AddBill just set.
+                // A modded override that throws must not leave a Replace half done.
+                object[] before = References(kv.Value);
+                try { kv.Value.ValidateSettings(); }
+                catch (Exception e)
+                {
+                    Logger.Warning("ValidateSettings failed on pasted bill " + kv.Key.recipeName + ": " + e.Message);
+                    invalidFailed++;
+                }
+                if (!before.SequenceEqual(References(kv.Value))) cleared++;
                 added++;
             }
             int skipped = notHere + limit + unavailable + notResearched + failed;
@@ -246,8 +263,23 @@ namespace InterfaceChanges.Bills
                 + added + " pasted"
                 + (replace ? ", " + removed + " old removed" : "")
                 + (skipped > 0 ? ", " + skipped + " skipped (" + reasons + ")" : "")
+                + (cleared > 0 ? ", " + cleared + " had a pawn or stockpile that is not available here, cleared" : "")
+                + (invalidFailed > 0 ? ", " + invalidFailed + " could not be checked" : "")
                 + (isSet && added > 0 ? ". Pawn and zone settings are not stored in standard sets." : ".");
             Report(thing, text);
+        }
+
+        // The pawn and stockpile references ValidateSettings may clear
+        // (public accessors: PawnRestriction, GetSlotGroup, GetIncludeSlotGroup).
+        private static object[] References(Bill bill)
+        {
+            var prod = bill as Bill_Production;
+            return new object[]
+            {
+                bill.PawnRestriction,
+                bill.GetSlotGroup(),
+                prod != null ? prod.GetIncludeSlotGroup() : null
+            };
         }
 
         private static string BuildReasons(int notHere, int limit, int unavailable, int notResearched, int failed)

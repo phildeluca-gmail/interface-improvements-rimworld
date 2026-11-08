@@ -47,7 +47,9 @@ namespace InterfaceChanges.Sizing
         private static bool weaponHookOk;
         private static bool active;
         private static int currentGroup = -1;
-        private static string lastLogKey = "";
+        // Last logged key per scope (map label), so alternating maps do not re-log (2026-11-07).
+        private static Game lastLogGame;
+        private static readonly Dictionary<string, string> lastLogKeys = new Dictionary<string, string>();
 
         public static bool Active { get { return active; } }
 
@@ -196,7 +198,7 @@ namespace InterfaceChanges.Sizing
         private static bool DeclineToVanilla(string reason, string mapLabel)
         {
             active = false;
-            LogOnce("vanilla|" + reason + "|" + mapLabel,
+            LogOnce(mapLabel, "vanilla|" + reason,
                 "Colonist bar: vanilla layout (" + reason + ")" + (mapLabel.Length > 0 ? ", current map " + mapLabel : "") + ".");
             return true;
         }
@@ -353,7 +355,7 @@ namespace InterfaceChanges.Sizing
             scale = sOther;
             active = true;
             // Key is row count, wrapTight and the reduced-to reason only; scales are in the text (2026-10-25).
-            LogOnce("big|" + map.uniqueID + "|" + percent.ToString("F0") + "|" + wrapTight + "|" + bigRows + "|" + (bigReduced ? (bigHeightReason ? "height" : "width") : "none"),
+            LogOnce(mapLabel, "big|" + percent.ToString("F0") + "|" + wrapTight + "|" + bigRows + "|" + (bigReduced ? (bigHeightReason ? "height" : "width") : "none"),
                 "Colonist bar: " + mapLabel + " group enlarged to " + percent.ToString("F0") + "% (scale " + sBig.ToString("F2")
                 + (bigReduced ? (bigHeightReason ? ", reduced to fit height" : ", reduced to fit width") : "") + ", " + bigRows + " row(s) of at most " + maxRows + "), other groups scale " + sOther.ToString("F2")
                 + ", vanilla scale " + s0.ToString("F2") + (wrapTight ? ", rows spaced for weapon icons." : "."));
@@ -480,13 +482,29 @@ namespace InterfaceChanges.Sizing
         }
 
         // One line per change of layout, never per frame or per recache.
-        private static void LogOnce(string key, string message)
+        private static void LogOnce(string scope, string key, string message)
         {
-            if (key == lastLogKey)
+            // A new save reuses map ids: forget everything when the game changes.
+            if (!ReferenceEquals(lastLogGame, Current.Game))
+            {
+                lastLogGame = Current.Game;
+                lastLogKeys.Clear();
+            }
+            string last;
+            if (lastLogKeys.TryGetValue(scope, out last) && last == key)
             {
                 return;
             }
-            lastLogKey = key;
+            // Scope "" is the global declines; switching between it and a map must always log.
+            if (scope.Length == 0)
+            {
+                lastLogKeys.Clear();
+            }
+            else
+            {
+                lastLogKeys.Remove("");
+            }
+            lastLogKeys[scope] = key;
             Logger.Info(message);
         }
     }

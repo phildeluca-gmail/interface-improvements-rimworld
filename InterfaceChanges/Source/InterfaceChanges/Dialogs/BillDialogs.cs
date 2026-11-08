@@ -63,20 +63,28 @@ namespace InterfaceChanges.Dialogs
     }
 
     // Small choice shown once when applying: add to the existing bills or
-    // replace them. Used by "Apply copied bills".
+    // replace them. Used by the "Paste bills" button. Any ending without a
+    // choice (Cancel, the X, a click outside, Escape, the building gone) is
+    // logged once in PostClose.
     public class Dialog_AddOrReplace : Window
     {
         private readonly string title;
         private readonly Action<bool> onChoose;
-        private readonly Thing thing;
+        private readonly List<Thing> things;
+        private readonly string names;
+        private bool chosen;
+        private bool endLogged;
+        private string endReason = "closed with the X, a click outside the window, or Escape";
 
-        public Dialog_AddOrReplace(string title, Action<bool> onChoose, Thing thing)
+        public Dialog_AddOrReplace(string title, Action<bool> onChoose, List<Thing> things, string names)
         {
+            this.names = names;
             this.title = title;
             this.onChoose = onChoose;
-            this.thing = thing;
+            this.things = things;
             forcePause = false;
             doCloseX = true;
+            closeOnAccept = false;
             closeOnClickedOutside = true;
             absorbInputAroundWindow = false;
         }
@@ -88,24 +96,39 @@ namespace InterfaceChanges.Dialogs
 
         public override void DoWindowContents(Rect inRect)
         {
-            if (BillTools.InvalidReason(thing) != null) { Close(); return; }
+            if (!things.Any(t => BillTools.InvalidReason(t) == null))
+            {
+                endLogged = true; // Tell below already writes the log line
+                Logger.Tell("Paste bills: no target building is valid any more; nothing was pasted.", LookTargets.Invalid);
+                Close();
+                return;
+            }
             Text.Font = GameFont.Small;
             Widgets.Label(new Rect(0f, 0f, inRect.width, 50f), title);
             float w = (inRect.width - 8f) / 2f;
             if (Widgets.ButtonText(new Rect(0f, inRect.height - 70f, w, 32f), "Add to existing bills"))
             {
+                chosen = true;
                 Close();
                 onChoose(false);
             }
             if (Widgets.ButtonText(new Rect(w + 8f, inRect.height - 70f, w, 32f), "Replace existing bills"))
             {
+                chosen = true;
                 Close();
                 onChoose(true);
             }
             if (Widgets.ButtonText(new Rect(0f, inRect.height - 32f, inRect.width, 28f), "Cancel"))
             {
+                endReason = "Cancel was pressed";
                 Close();
             }
+        }
+
+        public override void PostClose()
+        {
+            base.PostClose();
+            if (!chosen && !endLogged) Logger.Info("Paste bills on " + names + " ended without pasting: " + endReason + ".");
         }
     }
 
@@ -129,6 +152,7 @@ namespace InterfaceChanges.Dialogs
             Rebuild();
             forcePause = false;
             doCloseX = true;
+            closeOnAccept = false;
             closeOnClickedOutside = false;
             absorbInputAroundWindow = false;
         }

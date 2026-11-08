@@ -23,6 +23,11 @@ namespace InterfaceChanges.Core
         // outlive any save, like Standard Cargo's templates.
         public List<BillSet> billSets = new List<BillSet>();
 
+        // On-screen message kinds, ii-architecture.md section 17.
+        // Master switch for the message list, ii-architecture.md section 17 (13.1, 2026-11-07).
+        public bool filterMessages = true;
+        public List<InterfaceChanges.MessageKinds.MessageKindEntry> messageKinds = new List<InterfaceChanges.MessageKinds.MessageKindEntry>();
+
         public override void ExposeData()
         {
             base.ExposeData();
@@ -32,6 +37,9 @@ namespace InterfaceChanges.Core
             Scribe_Values.Look(ref mapGroupMaxRows, "mapGroupMaxRows", 5);
             Scribe_Collections.Look(ref billSets, "billSets", LookMode.Deep);
             if (billSets == null) billSets = new List<BillSet>();
+            Scribe_Values.Look(ref filterMessages, "filterMessages", true);
+            Scribe_Collections.Look(ref messageKinds, "messageKinds", LookMode.Deep);
+            if (messageKinds == null) messageKinds = new List<InterfaceChanges.MessageKinds.MessageKindEntry>();
         }
 
         public void DoWindowContents(Rect inRect)
@@ -53,7 +61,9 @@ namespace InterfaceChanges.Core
                 listing.Label("Most rows the enlarged group may use: " + mapGroupMaxRows);
                 mapGroupMaxRows = Mathf.Clamp(Mathf.RoundToInt(listing.Slider(mapGroupMaxRows, 1f, 5f)), 1, 5);
             }
+            float used = listing.CurHeight;
             listing.End();
+            InterfaceChanges.MessageKinds.MessageFilter.DoSettingsList(new Rect(inRect.x, inRect.y + used + 8f, inRect.width, inRect.height - used - 8f));
             if ((wasOn != enlargeCurrentMapGroup || wasPercent != mapGroupSizePercent || wasRows != mapGroupMaxRows)
                 && Current.ProgramState == ProgramState.Playing)
             {
