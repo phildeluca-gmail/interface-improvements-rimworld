@@ -12,13 +12,13 @@ namespace InterfaceChanges.Patches
     // draws every bottom-bar main tab button. Verified by reflection on
     // lib\Assembly-CSharp.dll: only MainButtonWorker declares DoButton; the
     // ToggleTab, ToggleWorld, ToggleMechTab and ToggleResearchTab workers
-    // do not override it. Draws the tab's key at the left edge of the button,
-    // left of the label. Shows whatever key is bound - vanilla's, another
+    // do not override it. Draws the tab's key right-aligned at the right edge of the
+    // button (moved from the left 2026-11-15, it overlapped the label). Shows whatever key is bound - vanilla's, another
     // mod's or ours. Applied by hand so a missing target logs, not throws.
     // See ic-architecture.md section 8.
     public static class TabLabelPatch
     {
-        private const float LeftPad = 6f;
+        private const float RightPad = 6f;
 
         public static void Apply(Harmony harmony)
         {
@@ -63,9 +63,9 @@ namespace InterfaceChanges.Patches
             TextAnchor oldAnchor = Text.Anchor;
             Color oldColor = GUI.color;
             Text.Font = GameFont.Tiny;
-            Text.Anchor = TextAnchor.MiddleLeft;
+            Text.Anchor = TextAnchor.MiddleRight;
             GUI.color = new Color(1f, 1f, 1f, 0.7f);
-            Widgets.Label(new Rect(rect.x + LeftPad, rect.y, 40f, rect.height), key.MainKeyLabel);
+            Widgets.Label(new Rect(rect.xMax - RightPad - 40f, rect.y, 40f, rect.height), key.MainKeyLabel);
             GUI.color = oldColor;
             Text.Anchor = oldAnchor;
             Text.Font = oldFont;

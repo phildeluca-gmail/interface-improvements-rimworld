@@ -33,6 +33,12 @@ namespace InterfaceChanges.Patches
         // Row width = card width minus 225 (needs column), 20 (margins) and 16 (scrollbar).
         private const float RowOverhead = 261f;
         private const string SleepAloneDefName = "WantToSleepWithSpouseOrLover";
+        // Thoughts that never show a location (ordered 2026-11-10): Insulted (the
+        // opinion memory) and InsultedMood (the mood line, a plain Thought_Memory).
+        private static readonly HashSet<string> NoLocationDefNames = new HashSet<string> { "Insulted", "InsultedMood" };
+        // Ugly-environment thought (ThoughtWorker_NeedBeauty, verified): stages 0 to 2
+        // (hideous, ugly, unsightly) are the negative ones. See ii-architecture.md section 22.
+        private const string BeautyDefName = "NeedBeauty";
         private const string VehiclePawnTypeName = "Vehicles.VehiclePawn";
 
         private static readonly List<Thought> scratch = new List<Thought>();
@@ -91,7 +97,28 @@ namespace InterfaceChanges.Patches
                     Text.WordWrap = false;
 
                     float w = Text.CalcSize(location).x;
-                    Widgets.Label(new Rect(rect.x + TextX, rect.y, w + 4f, rect.height), location);
+                    Rect labelRect = new Rect(rect.x + TextX, rect.y, w + 4f, rect.height);
+                    if (lastWasUgly)
+                    {
+                        // Ugly-environment location is a link (ii-architecture.md section 22).
+                        bool over = Mouse.IsOver(labelRect);
+                        GUI.color = over ? Color.yellow : Color.white;
+                        Widgets.Label(labelRect, location);
+                        GUI.color = Color.white;
+                        Widgets.DrawLineHorizontal(labelRect.x, labelRect.yMax - 4f, w, over ? Color.yellow : new Color(1f, 1f, 1f, 0.4f));
+                        if (over)
+                        {
+                            Widgets.DrawHighlight(labelRect);
+                        }
+                        if (Widgets.ButtonInvisible(labelRect, false))
+                        {
+                            JumpToLocation(pawn, location);
+                        }
+                    }
+                    else
+                    {
+                        Widgets.Label(labelRect, location);
+                    }
                 }
                 finally
                 {
@@ -150,6 +177,28 @@ namespace InterfaceChanges.Patches
             }
         }
 
+        // Jumps the camera to the room the pawn is in (its centre cell), or to the
+        // pawn's position when outdoors. TryJump does not close the inspect pane.
+        private static void JumpToLocation(Pawn pawn, string location)
+        {
+            if (pawn == null || !pawn.Spawned)
+            {
+                return;
+            }
+            IntVec3 cell = pawn.Position;
+            Room room = pawn.GetRoom();
+            if (room != null && !room.PsychologicallyOutdoors)
+            {
+                IntVec3 centre = room.ExtentsClose.CenterCell;
+                if (centre.InBounds(pawn.Map) && centre.GetRoom(pawn.Map) == room)
+                {
+                    cell = centre;
+                }
+            }
+            Logger.Info("NeedsSocialPatch: ugly-environment link clicked for " + pawn.LabelShort + " (" + location + "), jumping to " + cell + " on " + pawn.Map);
+            CameraJumper.TryJump(new GlobalTargetInfo(cell, pawn.Map));
+        }
+
         private static float MeasureWidest(Pawn pawn)
         {
             List<Thought> groups = new List<Thought>();
@@ -179,9 +228,12 @@ namespace InterfaceChanges.Patches
         // Works out the location text for one mood line. False means "add nothing":
         // a merged line, an invisible line, a thought not about another pawn, or
         // a pawn whose location is nothing (for example a dead one).
+        private static bool lastWasUgly;
+
         private static bool TryBuild(Pawn pawn, Thought group, List<Thought> list, out string location)
         {
             location = null;
+            lastWasUgly = false;
             if (pawn.needs == null || pawn.needs.mood == null)
             {
                 return false;
@@ -204,9 +256,20 @@ namespace InterfaceChanges.Patches
                 return false;
             }
 
+            if (thought.def != null && NoLocationDefNames.Contains(thought.def.defName))
+            {
+                return false;
+            }
+
             if (thought.def != null && thought.def.defName == SleepAloneDefName)
             {
                 return BuildSleepingAlone(pawn, out location);
+            }
+
+            if (thought.def != null && thought.def.defName == BeautyDefName)
+            {
+                lastWasUgly = BuildUgly(pawn, thought, out location);
+                return lastWasUgly;
             }
 
             Pawn other = null;
@@ -229,6 +292,29 @@ namespace InterfaceChanges.Patches
             }
 
             location = LocationOf(pawn, other);
+            return !location.NullOrEmpty();
+        }
+
+        // Ugly environment: names where the pawn is now (the room's role label,
+        // for example "Alice's bedroom", else "outdoors"). The need is smoothed
+        // (Need_Seeker), so this is the current place, not a record of where the
+        // ugliness was seen.
+        private static bool BuildUgly(Pawn pawn, Thought thought, out string location)
+        {
+            location = null;
+            if (thought.CurStageIndex > 2 || !pawn.Spawned)
+            {
+                return false;
+            }
+            Room room = pawn.GetRoom();
+            if (room == null || room.PsychologicallyOutdoors)
+            {
+                location = "outdoors";
+            }
+            else
+            {
+                location = room.GetRoomRoleLabel();
+            }
             return !location.NullOrEmpty();
         }
 

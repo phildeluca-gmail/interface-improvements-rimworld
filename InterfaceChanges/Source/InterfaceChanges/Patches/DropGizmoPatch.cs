@@ -3,7 +3,9 @@ using HarmonyLib;
 using InterfaceChanges.Drop;
 using InterfaceChanges.Utility;
 using RimWorld;
+using RimWorld.Planet;
 using Verse;
+using Logger = InterfaceChanges.Utility.Logger;
 
 namespace InterfaceChanges.Patches
 {
@@ -37,6 +39,49 @@ namespace InterfaceChanges.Patches
                     action = () => DropEverything.Queue(__instance)
                 };
             }
+
+            // Find bed (ii-architecture.md section 22): only when exactly this one
+            // pawn is selected, so the click has one pawn's bed to jump to.
+            if (__instance != null && __instance.IsColonist && !__instance.Dead
+                && Find.Selector.SingleSelectedThing == __instance)
+            {
+                yield return MakeFindBed(__instance);
+            }
+        }
+
+        private static Gizmo MakeFindBed(Pawn pawn)
+        {
+            Building_Bed bed = pawn.ownership != null ? pawn.ownership.OwnedBed : null;
+            Command_Action cmd = new Command_Action
+            {
+                defaultLabel = "Find bed",
+                defaultDesc = "Jump to this pawn's own bed and select it.",
+                icon = TexButton.Search,
+                groupKey = 0x49434642, // "ICFB"
+                action = () => FindBed(pawn)
+            };
+            if (bed == null)
+            {
+                cmd.Disable(pawn.LabelShort + " has no bed assigned.");
+            }
+            return cmd;
+        }
+
+        private static void FindBed(Pawn pawn)
+        {
+            Building_Bed bed = pawn.ownership != null ? pawn.ownership.OwnedBed : null;
+            if (bed == null)
+            {
+                Logger.Info("Find bed: " + pawn.LabelShort + " has no owned bed, nothing selected.");
+                return;
+            }
+            if (bed.Map == null || !bed.Spawned)
+            {
+                Logger.Info("Find bed: " + pawn.LabelShort + "'s bed " + bed.LabelCap + " is not spawned on a map, nothing selected.");
+                return;
+            }
+            CameraJumper.TryJumpAndSelect(new GlobalTargetInfo(bed));
+            Logger.Info("Find bed: jumped to and selected " + pawn.LabelShort + "'s bed " + bed.LabelCap + " at " + bed.Position + " on " + bed.Map);
         }
     }
 }

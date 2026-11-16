@@ -20,10 +20,11 @@ namespace InterfaceChanges.Core
             SelectionNamesPatch.Apply(harmony);
             TabLabelPatch.Apply(harmony);
             NeedsSocialPatch.Apply(harmony);
+            AssignScrollPatch.Apply(harmony);
             ColonistBarPatches.Apply(harmony);
             TradeDividerPatches.Apply(harmony);
+            ResourceReadoutShiftPatch.Apply(harmony);
             InterfaceChanges.MessageKinds.MessageFilter.Apply(harmony);
-            InterfaceChanges.Roofs.RoofOverlay.Apply(harmony);
             Utility.DropButtonCompat.Evaluate();
             Logger.Info("Loaded.");
         }

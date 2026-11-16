@@ -28,6 +28,10 @@ namespace InterfaceChanges.Core
         public bool filterMessages = true;
         public List<InterfaceChanges.MessageKinds.MessageKindEntry> messageKinds = new List<InterfaceChanges.MessageKinds.MessageKindEntry>();
 
+        // ii-architecture.md section 26. Persisted state of the Show table radius button.
+        public bool showTableRadius = false;
+        public bool showRoofSupport = false;
+
         public override void ExposeData()
         {
             base.ExposeData();
@@ -37,6 +41,8 @@ namespace InterfaceChanges.Core
             Scribe_Values.Look(ref mapGroupMaxRows, "mapGroupMaxRows", 5);
             Scribe_Collections.Look(ref billSets, "billSets", LookMode.Deep);
             if (billSets == null) billSets = new List<BillSet>();
+            Scribe_Values.Look(ref showTableRadius, "showTableRadius", false);
+            Scribe_Values.Look(ref showRoofSupport, "showRoofSupport", false);
             Scribe_Values.Look(ref filterMessages, "filterMessages", true);
             Scribe_Collections.Look(ref messageKinds, "messageKinds", LookMode.Deep);
             if (messageKinds == null) messageKinds = new List<InterfaceChanges.MessageKinds.MessageKindEntry>();

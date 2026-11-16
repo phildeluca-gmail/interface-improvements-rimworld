@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Prisoners tab and Raiders tab (ii-architecture.md section 21). -->
+  <MainButtonDef>
+    <defName>IC_Prisoners</defName>
+    <label>prisoners</label>
+    <description>List the colony's prisoners and slaves with skills, health, mood, resistance, will and injuries.</description>
+    <tabWindowClass>InterfaceChanges.Tabs.MainTabWindow_Prisoners</tabWindowClass>
+    <order>52</order>
+    <closesWorldView>true</closesWorldView>
+  </MainButtonDef>
+
+  <MainButtonDef>
+    <defName>IC_Raiders</defName>
+    <label>raiders</label>
+    <description>List the hostile people on this map with shooting, melee, weapon, armor, health and injuries.</description>
+    <tabWindowClass>InterfaceChanges.Tabs.MainTabWindow_Raiders</tabWindowClass>
+    <order>54</order>
+    <closesWorldView>true</closesWorldView>
+  </MainButtonDef>
+
+  <PawnTableDef>
+    <defName>IC_Prisoners</defName>
+    <columns>
+      <li>LabelWithIcon</li>
+      <li>IC_Skill_Shooting</li>
+      <li>IC_Skill_Melee</li>
+      <li>IC_Skill_Construction</li>
+      <li>IC_Skill_Mining</li>
+      <li>IC_Skill_Cooking</li>
+      <li>IC_Skill_Plants</li>
+      <li>IC_Skill_Animals</li>
+      <li>IC_Skill_Crafting</li>
+      <li>IC_Skill_Artistic</li>
+      <li>IC_Skill_Medicine</li>
+      <li>IC_Skill_Social</li>
+      <li>IC_Skill_Intellectual</li>
+      <li>IC_Health</li>
+      <li>IC_Mood</li>
+      <li>IC_Resistance</li>
+      <li>IC_Will</li>
+      <li>IC_Interaction</li>
+      <li>IC_Relationship</li>
+      <li>IC_Injuries</li>
+    </columns>
+    <minWidth>0</minWidth>
+  </PawnTableDef>
+
+  <PawnTableDef>
+    <defName>IC_Raiders</defName>
+    <columns>
+      <li>LabelWithIcon</li>
+      <li>IC_Skill_Shooting</li>
+      <li>IC_Skill_Melee</li>
+      <li>IC_Weapon</li>
+      <li>IC_Armor</li>
+      <li>IC_Health</li>
+      <li>IC_Injuries</li>
+    </columns>
+    <minWidth>0</minWidth>
+  </PawnTableDef>
+</Defs>
