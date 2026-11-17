@@ -143,6 +143,36 @@ namespace InterfaceChanges.Bindings
                     }
                 }
 
+                // Uninstall gets U (ordered 2026-11-16) before the other options
+                // can take it. If U is already used in this panel it stays
+                // unbound and one line says what holds U. Vanilla's own
+                // constructor gives Designator_Uninstall KeyBindingDefOf.Misc12
+                // (verified in lib\Assembly-CSharp.dll), which is never altered,
+                // so that case gets its own line.
+                bool uninstallWantsU = false;
+                foreach (Designator d in designators)
+                {
+                    if (d is Designator_Uninstall && d.hotKey != null)
+                    {
+                        Logger.Info("Uninstall hotkey: Uninstall in " + cat.LabelCap + " already has its own binding " + d.hotKey.defName + " (" + d.hotKey.MainKeyLabel + "), left as it is; U not assigned.");
+                        break;
+                    }
+
+                    if (d is Designator_Uninstall)
+                    {
+                        if (taken.Add(KeyCode.U))
+                        {
+                            uninstallWantsU = true;
+                        }
+                        else
+                        {
+                            Logger.Info("Uninstall hotkey: U is taken in " + cat.LabelCap + ", left unbound. U is used by " + WhoHas(KeyCode.U, prefs, generated) + ".");
+                        }
+
+                        break;
+                    }
+                }
+
                 var usedIds = new HashSet<string>();
                 foreach (Designator d in designators)
                 {
@@ -175,7 +205,19 @@ namespace InterfaceChanges.Bindings
                     }
 
                     optsTotal++;
-                    KeyCode key = Pick(label, taken);
+                    KeyCode key;
+                    if (d is Designator_Uninstall)
+                    {
+                        // only the first Uninstall in the panel gets U
+                        key = uninstallWantsU ? KeyCode.U : KeyCode.None;
+                        uninstallWantsU = false;
+                        if (key != KeyCode.None) Logger.Info("Uninstall hotkey: U assigned in " + cat.LabelCap + ".");
+                    }
+                    else
+                    {
+                        key = Pick(label, taken);
+                    }
+
                     KeyBindingDef kb = MakeDef("IC_Des_" + cat.defName + "_" + uniqueId, cat.LabelCap + ": " + label, optCat, key);
                     generated.Add(kb);
                     d.hotKey = kb;
@@ -213,6 +255,25 @@ namespace InterfaceChanges.Bindings
 
             sb.Append('.');
             Logger.Info(sb.ToString());
+        }
+
+        // Names the first binding (a vanilla def, a player binding, or one of
+        // ours generated this run) that uses the key, for the Uninstall log line.
+        private static string WhoHas(KeyCode code, KeyPrefsData prefs, List<KeyBindingDef> generated)
+        {
+            foreach (KeyBindingDef def in DefDatabase<KeyBindingDef>.AllDefs)
+            {
+                var one = new HashSet<KeyCode>();
+                AddKeys(one, def, prefs);
+                if (one.Contains(code)) return def.defName;
+            }
+
+            foreach (KeyBindingDef g in generated)
+            {
+                if (g.defaultKeyCodeA == code) return g.defName;
+            }
+
+            return "an unknown binding";
         }
 
         // Why Pick came back empty: nothing to try, or every candidate taken.
