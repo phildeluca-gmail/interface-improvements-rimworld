@@ -41,6 +41,7 @@
       <li>IC_Will</li>
       <li>IC_Interaction</li>
       <li>IC_Relationship</li>
+      <li>IC_Loyal</li>
       <li>IC_Injuries</li>
     </columns>
     <minWidth>0</minWidth>
@@ -55,6 +56,7 @@
       <li>IC_Weapon</li>
       <li>IC_Armor</li>
       <li>IC_Health</li>
+      <li>IC_Loyal</li>
       <li>IC_Injuries</li>
     </columns>
     <minWidth>0</minWidth>

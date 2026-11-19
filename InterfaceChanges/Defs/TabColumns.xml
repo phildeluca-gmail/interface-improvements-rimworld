@@ -162,6 +162,14 @@
     <sortable>true</sortable>
   </PawnColumnDef>
   <PawnColumnDef>
+    <defName>IC_Loyal</defName>
+    <label>UL</label>
+    <workerClass>InterfaceChanges.Columns.PawnColumnWorker_Loyal</workerClass>
+    <headerTip>Unwaveringly loyal (cannot be recruited)</headerTip>
+    <width>42</width>
+    <sortable>true</sortable>
+  </PawnColumnDef>
+  <PawnColumnDef>
     <defName>IC_Injuries</defName>
     <label>IJ</label>
     <workerClass>InterfaceChanges.Columns.PawnColumnWorker_Injuries</workerClass>

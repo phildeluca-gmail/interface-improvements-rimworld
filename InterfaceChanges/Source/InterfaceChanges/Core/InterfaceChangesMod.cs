@@ -25,6 +25,7 @@ namespace InterfaceChanges.Core
             TradeDividerPatches.Apply(harmony);
             ResourceReadoutShiftPatch.Apply(harmony);
             PlaySettingsIconsPatch.Apply(harmony);
+            SaveAndExitButtonPatch.Apply(harmony);
             InterfaceChanges.MessageKinds.MessageFilter.Apply(harmony);
             Utility.DropButtonCompat.Evaluate();
             Logger.Info("Loaded.");

@@ -6,10 +6,10 @@ using Verse;
 
 namespace InterfaceChanges.Columns
 {
-    // IJ: injuries, location and type only, e.g. "LSho Gun". Side letter (L/R)
-    // plus three letters of the part, then three letters of the injury kind.
-    // Missing parts read "Mis". Identical entries merge as "LArm Cut x3".
-    // The cell tooltip lists every injury in full. Scars (permanent injuries)
+    // IJ: injuries, location and type only, e.g. "LA Gun". Limbs as initials
+    // (RL LL RA LA, shoulder = arm), other parts full label, then three letters of the injury kind.
+    // Missing parts read "gone". Identical entries merge as "LA Cut x3".
+    // The cell tooltip lists every injury by location and kind only (def label, never Hediff.LabelCap, which can carry the weapon or animal that caused it - ordered 2026-11-19). Scars (permanent injuries)
     // are skipped. Ordered most severe first, missing parts before injuries.
     public class PawnColumnWorker_Injuries : PawnColumnWorker
     {
@@ -65,26 +65,35 @@ namespace InterfaceChanges.Columns
             return text;
         }
 
+        // Limbs (def Leg, Arm, Hand, Foot, Shoulder) become first letters of each word of the label:
+        // "right leg" -> RL, "left hand" -> LH, "right foot" -> RF. A shoulder reads as the arm on its side
+        // ("right shoulder" -> RA). Every other part keeps its full label. Verified against
+        // Core Defs Bodies_Humanlike.xml customLabels, 2026-11-19.
         private static string PartCode(BodyPartRecord part)
         {
             if (part == null)
             {
-                return "Who";
+                return "Whole body";
             }
             string label = part.Label ?? "";
-            string side = "";
-            if (label.StartsWith("left "))
+            string def = part.def != null ? part.def.defName : "";
+            if (def == "Shoulder")
             {
-                side = "L";
-                label = label.Substring(5);
+                // Use the label of the arm this shoulder carries, so the side reads
+                // right in any language; fall back to swapping the English word.
+                BodyPartRecord arm = part.parts?.Find(p => p.def != null && p.def.defName == "Arm");
+                label = arm != null ? (arm.Label ?? "") : label.Replace("shoulder", "arm");
             }
-            else if (label.StartsWith("right "))
+            else if (def != "Leg" && def != "Arm" && def != "Hand" && def != "Foot")
             {
-                side = "R";
-                label = label.Substring(6);
+                return label;
             }
-            string word = label.Length > 3 ? label.Substring(0, 3) : label;
-            return side + word.CapitalizeFirst();
+            StringBuilder sb = new StringBuilder();
+            foreach (string word in label.Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries))
+            {
+                sb.Append(char.ToUpper(word[0]));
+            }
+            return sb.Length > 0 ? sb.ToString() : label;
         }
 
         private static string KindCode(string label)
@@ -110,8 +119,8 @@ namespace InterfaceChanges.Columns
 
             foreach (Hediff_MissingPart missing in set.GetMissingPartsCommonAncestors())
             {
-                Add(counts, severity, PartCode(missing.Part) + " Mis", 1000f);
-                tip.AppendLine(missing.LabelCap + (missing.Part != null ? " (" + missing.Part.LabelCap + ")" : ""));
+                Add(counts, severity, PartCode(missing.Part) + " gone", 1000f);
+                tip.AppendLine("gone (" + PartCode(missing.Part) + ")");
                 info.Count++;
             }
             foreach (Hediff h in set.hediffs)
@@ -122,7 +131,7 @@ namespace InterfaceChanges.Columns
                     continue;
                 }
                 Add(counts, severity, PartCode(injury.Part) + " " + KindCode(injury.def.label), injury.Severity);
-                tip.AppendLine(injury.LabelCap + (injury.Part != null ? " (" + injury.Part.LabelCap + ")" : "") + " " + injury.Severity.ToString("F1"));
+                tip.AppendLine(injury.def.LabelCap + " (" + PartCode(injury.Part) + ")" + " " + injury.Severity.ToString("F1"));
                 info.Count++;
             }
 

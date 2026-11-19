@@ -131,6 +131,30 @@ namespace InterfaceChanges.Columns
         }
     }
 
+    // UL: "Yes" when the pawn is unwaveringly loyal (cannot be recruited), "-"
+    // otherwise. Pawn_GuestTracker.Recruitable is false only when the
+    // "unwavering prisoners" difficulty setting is on and the pawn rolled
+    // non-recruitable (verified in lib\Assembly-CSharp.dll; vanilla draws its
+    // UnwaveringlyLoyal icon from the same test). Base game, no DLC needed;
+    // with the setting off every pawn reads "-". Ordered 2026-11-19.
+    public class PawnColumnWorker_Loyal : PawnColumnWorker_CellText
+    {
+        protected override string GetTextFor(Pawn pawn)
+        {
+            return pawn.guest != null && !pawn.guest.Recruitable ? "Yes" : "-";
+        }
+
+        public override int Compare(Pawn a, Pawn b)
+        {
+            return Loyal(a).CompareTo(Loyal(b));
+        }
+
+        private static int Loyal(Pawn p)
+        {
+            return p.guest != null && !p.guest.Recruitable ? 1 : 0;
+        }
+    }
+
     // IT: the prisoner's interaction mode (recruit, convert, maintain only...).
     public class PawnColumnWorker_Interaction : PawnColumnWorker_CellText
     {
