@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Reflection;
 using RimWorld;
 using RimWorld.Planet;
 using UnityEngine;
@@ -9,18 +8,13 @@ using Logger = InterfaceChanges.Utility.Logger;
 
 namespace InterfaceChanges.Roofs
 {
-    // ii-architecture.md section 26. A toggle button (bottom left, directly above the
-    // "Unsupported roofs" button) that outlines the radius within which pawns will look
-    // for work at a table, centred on each player-owned bill giver on the current map.
+    // ii-architecture.md section 26. A toggle icon (bottom-right play-settings row) that outlines the radius within which pawns will look
+    // for a table to eat at, centred on each spawned player-faction dining table on the current map.
     // No Harmony patch: GameComponentUpdate draws. The edge quads of every ring are baked
     // into ONE Mesh, rebuilt only when the set of tables or the radius changes (checked
     // every RefreshSeconds by a cheap signature); each frame is a single DrawMesh.
     public class TableRadiusOverlay : GameComponent
     {
-        // Do Not Be Lazy section 47 (52.4): "A setting default is 24". DNBL has no table
-        // radius setting yet (its only radius is sweepRadius, a different thing), so this
-        // is the default to wire up once DNBL builds one.
-        private const int DefaultRadius = 24;
         private const float RefreshSeconds = 2f;
 
         private static readonly Color RingColor = new Color(1f, 0.85f, 0.2f);
@@ -32,9 +26,6 @@ namespace InterfaceChanges.Roofs
         private static Mesh staleMesh;
         private static Material ringMaterial;
         private static float ringY;
-        private static bool fieldLookedUp;
-        private static FieldInfo radiusField;
-        private static object dnblSettings;
 
         public TableRadiusOverlay(Game game)
         {
@@ -52,27 +43,13 @@ namespace InterfaceChanges.Roofs
             signature = 0;
         }
 
-        // Radius source: DNBL's table-radius setting by reflection if it exists, else 24.
-        // The FieldInfo is looked up once; the value is read on each refresh.
+        // Radius: vanilla's chair search radius when a pawn eats. Toils_Ingest.CarryIngestibleToChewSpot
+        // searches for a chair within ingestible.chairSearchRadius; IngestibleProperties declares it
+        // as 32f; no meal in Data overrides it, only beer (25) and drugs (0-8) do (ii-architecture.md section 26).
+        // Read from a default instance so the value follows the game rather than a copy of 32.
         private static int ReadRadius()
         {
-            try
-            {
-                if (!fieldLookedUp)
-                {
-                    fieldLookedUp = true;
-                    foreach (var mod in LoadedModManager.ModHandles)
-                    {
-                        if (mod.GetType().FullName != "DoNotBeLazy.Core.DoNotBeLazyMod") continue;
-                        dnblSettings = mod.GetType().GetField("Settings", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
-                        FieldInfo f = dnblSettings?.GetType().GetField("tableRadius", BindingFlags.Public | BindingFlags.Instance);
-                        if (f != null && f.FieldType == typeof(int)) radiusField = f;
-                    }
-                }
-                if (radiusField != null) return (int)radiusField.GetValue(dnblSettings);
-            }
-            catch { }
-            return DefaultRadius;
+            return Mathf.RoundToInt(new IngestibleProperties().chairSearchRadius);
         }
 
         // Rebuilds the one combined mesh only when the set of tables or the radius changed.
@@ -87,7 +64,9 @@ namespace InterfaceChanges.Roofs
             int sig = radius * 31 + m.uniqueID;
             foreach (Building b in m.listerBuildings.allBuildingsColonist)
             {
-                if (!(b is IBillGiver) || !b.Spawned) continue;
+                // Vanilla dining-table test: Toils_Ingest chair validation requires a neighbouring edifice
+                // (edificeGrid, so def.IsEdifice) with surfaceType Eat.
+                if (!b.Spawned || b.def.surfaceType != SurfaceType.Eat || !b.def.IsEdifice()) continue;
                 tables.Add(b.Position);
                 sig = sig * 31 + b.Position.GetHashCode();
             }
@@ -152,27 +131,21 @@ namespace InterfaceChanges.Roofs
             combined.SetTriangles(tris, 0);
         }
 
-        public override void GameComponentOnGUI()
+        // Called by the play-settings icon (Patches/PlaySettingsIconsPatch.cs, section 33).
+        public static void SetShown(bool on)
         {
-            if (Current.ProgramState != ProgramState.Playing || Find.CurrentMap == null || WorldRendererUtility.WorldRenderedNow) return;
-            var settings = InterfaceChangesMod.Settings;
-            bool on = settings.showTableRadius;
-            var rect = new Rect(10f, UI.screenHeight - 35f - 8f - 30f - 34f, 190f, 30f);
-            if (Widgets.ButtonText(rect, on ? "Show table radius: on" : "Show table radius: off"))
+            InterfaceChangesMod.Settings.showTableRadius = on;
+            InterfaceChangesMod.SaveSettings();
+            if (on)
             {
-                settings.showTableRadius = !on;
-                InterfaceChangesMod.SaveSettings();
-                if (!on)
-                {
-                    Logger.Info("Show table radius switched on.");
-                    Refresh(Find.CurrentMap);
-                }
-                else
-                {
-                    ClearMesh();
-                    cachedMap = null;
-                    Logger.Info("Show table radius switched off.");
-                }
+                Logger.Info("Show table radius switched on.");
+                if (Find.CurrentMap != null) Refresh(Find.CurrentMap);
+            }
+            else
+            {
+                ClearMesh();
+                cachedMap = null;
+                Logger.Info("Show table radius switched off.");
             }
         }
 

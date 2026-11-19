@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Puts the night owl icon column right after the name column of the
+       Schedule (Restrict) tab. If another mod has removed or renamed the
+       name column, falls back to the front of the table instead of
+       failing the patch. Match on the first name entry only, so a
+       duplicate added by another mod cannot insert the column twice. -->
+  <Operation Class="PatchOperationConditional">
+    <xpath>/Defs/PawnTableDef[defName="Restrict"]/columns/li[text()="IC_NightOwl"]</xpath>
+    <nomatch Class="PatchOperationConditional">
+      <xpath>/Defs/PawnTableDef[defName="Restrict"]/columns/li[text()="LabelShortWithIcon"]</xpath>
+      <match Class="PatchOperationInsert">
+        <xpath>(/Defs/PawnTableDef[defName="Restrict"]/columns/li[text()="LabelShortWithIcon"])[1]</xpath>
+        <order>Append</order>
+        <value>
+          <li>IC_NightOwl</li>
+        </value>
+      </match>
+      <nomatch Class="PatchOperationAdd">
+        <xpath>/Defs/PawnTableDef[defName="Restrict"]/columns</xpath>
+        <order>Prepend</order>
+        <value>
+          <li>IC_NightOwl</li>
+        </value>
+      </nomatch>
+    </nomatch>
+  </Operation>
+</Patch>

@@ -9,4 +9,14 @@
     <width>130</width>
     <sortable>true</sortable>
   </PawnColumnDef>
+  <!-- Night owl icon column for the Schedule tab (ii-architecture.md section 34). -->
+  <PawnColumnDef>
+    <defName>IC_NightOwl</defName>
+    <label>night owl</label>
+    <workerClass>InterfaceChanges.Columns.PawnColumnWorker_NightOwl</workerClass>
+    <headerIcon>UI/IINightOwl</headerIcon>
+    <headerTip>Pawns with the Night Owl trait. Click to sort them first.</headerTip>
+    <width>28</width>
+    <sortable>true</sortable>
+  </PawnColumnDef>
 </Defs>

@@ -24,6 +24,7 @@ namespace InterfaceChanges.Core
             ColonistBarPatches.Apply(harmony);
             TradeDividerPatches.Apply(harmony);
             ResourceReadoutShiftPatch.Apply(harmony);
+            PlaySettingsIconsPatch.Apply(harmony);
             InterfaceChanges.MessageKinds.MessageFilter.Apply(harmony);
             Utility.DropButtonCompat.Evaluate();
             Logger.Info("Loaded.");
